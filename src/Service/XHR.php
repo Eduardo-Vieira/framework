@@ -14,9 +14,18 @@ class XHR
 
     public static $paginate = true;
 
-    public static function alert($message, $type = 'info')
+    public static function row($title = '', $columns = []) {
+        Table::$columns_data[] = ['title' => $title, 'data' => $columns];
+    }
+
+    public static function alertx($message, $type = 'info')
     {
         return Table::Alert($message, $type);
+    }
+
+    public static function alert($message, $type = 'info')
+    {
+        echo '<tr><td colspan="100%">' . Table::Alert($message, $type) . '</td></tr>';
     }
 
     public static function getBreadCrumb($title)
@@ -35,7 +44,11 @@ class XHR
 
             $name = ($name == 'detail') ? 'detalhes' : $name;
             $name = ($name == 'edit')   ? 'edição' : $name;
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> cdd5230e8343a795ee5438002e26cae01fe2615f
 
             $pwd .= "<li><a $active >$name</a></li>";
         }

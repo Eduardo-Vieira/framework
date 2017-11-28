@@ -23,7 +23,9 @@ class Generator
             $HTMLDetailBtn,
             $ColumnsDB,
             $HeaderClean,
-            $FieldsPDF;
+            $FieldsPDF,
+            $colHgridView;
+            
 
     protected $pathController,
             $pathModel,
@@ -35,14 +37,16 @@ class Generator
     public function __construct()
     {
         //dd($_REQUEST);
-        $this->setPaths();
 
-        $this->program_name = $_REQUEST['TX_URL'];
+        $this->program_name = strtolower($_REQUEST['TX_URL']);
         $this->tablePk = $this->cleanPk($_REQUEST['TABLE_PK']);
         $this->tablePk_var = $this->cleanPk_var($_REQUEST['TABLE_PK']);
         $this->table = $_REQUEST['TABLE_NAME'];
         $this->query = $_REQUEST['TABLE_SQL'];
         $this->queryBuscar = $_REQUEST['TABLE_SQL_BUSCAR'];
+
+        $this->setPaths();
+
         $this->ColumnsDB = $this->Options();
         $this->search = $this->setSearch();
         $this->tableHeader = $this->setHeader();
@@ -53,6 +57,7 @@ class Generator
         $this->HTMLEditFieldsID = $this->setEditIds();
         $this->HTMLDetail = $this->setDetailPage();
         $this->HTMLDetailBtn = $this->setDetailButtons();
+        $this->colHgridView = $this->setColHgridView();
     }
     public function generate()
     {
@@ -63,14 +68,15 @@ class Generator
             echo '*** ocorreu um erro ao tentar gerar os arquivos. verifique se todos os templates existem.';
         }
     }
+
     private function setPaths()
     {
         $this->pathController = DOC_ROOT . 'app/Http/Controllers/';
         $this->pathModel      = DOC_ROOT . 'app/Http/Models/';
         $this->pathView       = DOC_ROOT . 'app/Http/Views/';
 
-        $this->pathViewCss    = DOC_ROOT . 'public/app/css/';
-        $this->pathViewJs     = DOC_ROOT . 'public/app/js/';
+        $this->pathViewCss    = DOC_ROOT . 'app/Http/Views/' . $this->program_name . '/css/';
+        $this->pathViewJs     = DOC_ROOT . 'app/Http/Views/' . $this->program_name . '/js/';
         $this->pathPdf       = DOC_ROOT  . 'app/Pdf/';
 
         $this->pathTemplate = __DIR__ . DS . '../Support/Templates/Generator/tpl/';
@@ -98,6 +104,21 @@ class Generator
         }
 
         return rtrim($new, '-');
+    }
+
+    public function setColHgridView()
+    {
+        $campos = $_REQUEST['campos'];
+        foreach ($campos as $key => $val) {
+            if (!$val) {
+                continue;
+            }
+            $val = str_replace(':', '.', $val);
+            $col .= "'".explode('.', $val)[1]."',";
+        }
+
+        return $col;
+
     }
 
     public function Options()
@@ -219,63 +240,79 @@ class Generator
 </tr>
 
 */
-
     private function setHeader()
     {
         $campos = $_REQUEST['campos'];
 
-        if (!$campos) {
-            return false;
-        }
         if ($campos) {
-            $i = 0;
-            foreach ($campos as $key => $val) {
-                $val = explode(':', $val);
-                $val = explode('_', $val[1]);
-                if($val[0] === 'ID' && $i === 0) {
-                    $val[1] = '#';
-                    $i++;
-                }
-                $pdf_header .= " '$val[1]',\n ";
-                $table .= "<th>{$val[1]}</th>\n";
+            foreach ($campos as $index => $key) {
+                $key2   = explode(':', $key)[1];
+                $label  = explode('_', $key2);
+                $label  = (strtolower($label[0]) == 'id') ? '#' : $label[1];
+                $key    = str_replace(':', '.', $key);
+                $html[] = "\t'$label:$key:ANY'";
             }
-
-            $table .= "<th class='text-center'>AÇÕES</th>\n";
-
-            $table .= "<tr class='search-fields'>\n
-                            <form class='form-fields'>\n";
-
-            foreach ($campos as $key => $val) {
-                    $val = str_replace(':', '.', $val);
-                    $field_name = explode('.', $val);
-                    if(count($field_name) > 1) {
-                        $pdf_fields .= "\$linha['{$field_name[1]}'],\n";
-                    } else {
-                        $pdf_fields .= "\$linha['{$field_name[0]}'],\n";
-                    }
-
-                    $table .= "<td><input name='$val:ANY' class='form-control Enter' type='text'/></td>\n";
-            }
-
-            $table .= "
-            <td style='width:130px !important;'>
-              <button type='button' class='btn btn-primary search'>
-                <span class='glyphicon glyphicon-search' aria-hidden='true'></span>
-              </button>\n\n
-
-              <button type='button' class='btn btn-default search-refresh'>
-                <span class='glyphicon glyphicon-refresh' aria-hidden='true'></span>
-              </button>\n\n
-            </td> \n\n";
-
-            $table .= "</form>\n
-                        </tr>\n";
+            return implode(",\n", $html);
         }
-
-        $this->HeaderClean = rtrim($pdf_header, ',');
-        $this->FieldsPDF   = rtrim($pdf_fields, ',');
-        return $table;
+        return false;
     }
+
+    // private function setHeader_old()
+    // {
+    //     $campos = $_REQUEST['campos'];
+    //
+    //     if (!$campos) {
+    //         return false;
+    //     }
+    //     if ($campos) {
+    //         $i = 0;
+    //         foreach ($campos as $key => $val) {
+    //             $val = explode(':', $val);
+    //             $val = explode('_', $val[1]);
+    //             if($val[0] === 'ID' && $i === 0) {
+    //                 $val[1] = '#';
+    //                 $i++;
+    //             }
+    //             $pdf_header .= " '$val[1]',\n ";
+    //             $table .= "<th>{$val[1]}</th>\n";
+    //         }
+    //
+    //         $table .= "<th class='text-center'>AÇÕES</th>\n";
+    //
+    //         $table .= "<tr class='search-fields'>\n
+    //                         <form class='form-fields'>\n";
+    //
+    //         foreach ($campos as $key => $val) {
+    //                 $val = str_replace(':', '.', $val);
+    //                 $field_name = explode('.', $val);
+    //                 if(count($field_name) > 1) {
+    //                     $pdf_fields .= "\$linha['{$field_name[1]}'],\n";
+    //                 } else {
+    //                     $pdf_fields .= "\$linha['{$field_name[0]}'],\n";
+    //                 }
+    //
+    //                 $table .= "<td><input name='$val:ANY' class='form-control Enter' type='text'/></td>\n";
+    //         }
+    //
+    //         $table .= "
+    //         <td style='width:130px !important;'>
+    //           <button type='button' class='btn btn-primary search'>
+    //             <span class='glyphicon glyphicon-search' aria-hidden='true'></span>
+    //           </button>\n\n
+    //
+    //           <button type='button' class='btn btn-default search-refresh'>
+    //             <span class='glyphicon glyphicon-refresh' aria-hidden='true'></span>
+    //           </button>\n\n
+    //         </td> \n\n";
+    //
+    //         $table .= "</form>\n
+    //                     </tr>\n";
+    //     }
+    //
+    //     $this->HeaderClean = rtrim($pdf_header, ',');
+    //     $this->FieldsPDF   = rtrim($pdf_fields, ',');
+    //     return $table;
+    // }
 
     private function getFieldType($type = false, $label = false)
     {
@@ -633,12 +670,14 @@ class Generator
     {
         $file = str_replace('{%arrayPkTable%}', $this->arrayPkTable(), $file);
         // controller
-    $file = str_replace('{%Controller%}',           ucwords(strtolower($this->program_name)), $file);
+        $file = str_replace('{%Controller%}',           ucwords(strtolower($this->program_name)), $file);
         $file = str_replace('{%controller_name%}',      strtolower($this->program_name), $file);
         $file = str_replace('{%tablePk%}',              $this->tablePk,     $file);
         $file = str_replace('{%tablePk_var%}',          $this->tablePk_var,     $file);
         $file = str_replace('{%TABLE_NAME%}',           strtoupper($this->table[0]), $file);
         $file = str_replace('{%ColumnsDB%}',            $this->ColumnsDB, $file);
+        $file = str_replace('{%colHgridView%}',         $this->colHgridView, $file);
+
     // model
         $this->query = str_replace(',', ",\n", $this->query);
         $this->query = str_replace("\n\n\n\n", "\n", $this->query);
@@ -686,6 +725,14 @@ class Generator
     if (!file_exists($this->pathView.$this->program_name)) {
         mkdir($this->pathView.$this->program_name, $mode, true);
     }
+
+    if (!file_exists($this->pathViewCss)) {
+        mkdir($this->pathViewCss, $mode, true);
+    }
+
+    if (!file_exists($this->pathViewJs)) {
+        mkdir($this->pathViewJs, $mode, true);
+    }
     // tudo ok!
     //return true;
     }
@@ -728,13 +775,51 @@ class Generator
             break;
 
             case 'css':
-              $path = $this->pathViewCss;
-              $program = strtolower($this->program_name).'.css';
+              switch ($filename[1]) {
+                case 'index':
+                  $path = $this->pathViewCss;
+                  $program = 'index.css';
+                break;
+
+                case 'detail':
+                  $path = $this->pathViewCss;
+                  $program = 'detail.css';
+                break;
+
+                case 'edit':
+                  $path = $this->pathViewCss;
+                  $program = 'edit.css';
+                break;
+
+                case 'novo':
+                  $path = $this->pathViewCss;
+                  $program = 'novo.css';
+                break;
+              }
             break;
 
             case 'js':
-              $path = $this->pathViewJs;
-              $program = strtolower($this->program_name).'.js';
+              switch ($filename[1]) {
+                case 'index':
+                  $path = $this->pathViewJs;
+                  $program = 'index.js';
+                break;
+
+                case 'detail':
+                  $path = $this->pathViewJs;
+                  $program = 'detail.js';
+                break;
+
+                case 'edit':
+                  $path = $this->pathViewJs;
+                  $program = 'edit.js';
+                break;
+
+                case 'novo':
+                  $path = $this->pathViewJs;
+                  $program = 'novo.js';
+                break;
+              }
             break;
 
             case 'twig':

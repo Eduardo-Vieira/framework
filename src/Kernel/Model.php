@@ -8,6 +8,7 @@ class Model
 {
     public static $connection = false;
     public static $all        = false;
+    public static $persistence = true;
 
     protected static $db = null;
 
@@ -55,11 +56,12 @@ class Model
 
         foreach ($data as $key => $value) {
 
-            // da prioridade de pesquisa na versao mobile
-            if(in_array('TX_PESQUISA', array_keys($data))) {
-                if($value) {
-                    $value_all = $value;
-                }
+            if(is_null($value)) {
+                unset($data[$key]);
+            }
+
+            if($data['TX_PESQUISA']) {
+                $value_all = $data['TX_PESQUISA'];
                 unset($data['TX_PESQUISA']);
                 continue;
             }
@@ -168,6 +170,19 @@ class Model
         return ($search) ? implode(' ', $search) : false;
     }
 
+
+
+
+
+
+
+
+
+
+    public static function ociChangePassword($username, $old_password, $new_password) {
+        return self::dbConnection()->getInstance(self::$connection)->ociChangePassword($username, $old_password, $new_password);
+    }
+
     public static function getQueries($connection = null) {
         return self::dbConnection()->getInstance($connection ? $connection : self::$connection)->getQueries();
     }
@@ -179,31 +194,65 @@ class Model
 
     public static function query($sql, $type = null)
     {
-        return self::dbConnection()->getInstance(self::$connection)->query($sql, $type);
+        $data = self::dbConnection()->getInstance(self::$connection)->query($sql, $type);
+
+        if(self::$persistence) {
+            self::execute("COMMIT");
+        }
+
+        return $data;
     }
 
     public static function find($table, $where = null)
     {
-        return self::dbConnection()->getInstance(self::$connection)->find($table, $where);
+        $data = self::dbConnection()->getInstance(self::$connection)->find($table, $where);
+
+        if(self::$persistence) {
+            self::execute("COMMIT");
+        }
+
+        return $data;
     }
 
     public static function insert($table, $data)
     {
-        return self::dbConnection()->getInstance(self::$connection)->insert($table, $data);
+        $data = self::dbConnection()->getInstance(self::$connection)->insert($table, $data);
+
+        if(self::$persistence) {
+            self::execute("COMMIT");
+        }
+
+        return $data;
     }
 
     public static function update($table, $data, $where)
     {
-        return self::dbConnection()->getInstance(self::$connection)->update($table, $data, $where);
+        $data = self::dbConnection()->getInstance(self::$connection)->update($table, $data, $where);
+
+        if(self::$persistence) {
+            self::execute("COMMIT");
+        }
+
+        return $data;
     }
 
     public static function delete($table, $where)
     {
-        return self::dbConnection()->getInstance(self::$connection)->delete($table, $where);
+        $data = self::dbConnection()->getInstance(self::$connection)->delete($table, $where);
+
+        if(self::$persistence) {
+            self::execute("COMMIT");
+        }
+
+        return $data;
     }
 
     public static function execute($sql)
     {
         return self::dbConnection()->getInstance(self::$connection)->execute($sql);
+    }
+
+    public static function callProcedure($sp_name = null, $sp_args = []) {
+        return self::dbConnection()->getInstance(self::$connection)->callProcedure($sp_name, $sp_args);
     }
 }

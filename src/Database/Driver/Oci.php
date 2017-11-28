@@ -4,8 +4,9 @@ namespace Database\Driver;
 
 use \PDOException;
 use \Service\Debug\Debug;
+use \Service\Session;
 
-class Oci implements \Database\Interfaces\PersistenceDatabase
+class Oci extends \PDO implements \Database\Interfaces\PersistenceDatabase
 {
     protected static $config = [];
     protected static $error  = [];
@@ -21,6 +22,20 @@ class Oci implements \Database\Interfaces\PersistenceDatabase
     public static function getError()
     {
         return self::$error;
+    }
+
+    public function ociChangePassword($username, $old_password, $new_password) {
+        try {
+            self::$config = autoload_config();
+            $host = self::$config['database']['connections'][Session::get('s_environment')][0]['host'];
+            $port = self::$config['database']['connections'][Session::get('s_environment')][0]['port'];
+            $dbase = self::$config['database']['connections'][Session::get('s_environment')][0]['database'];
+            $database = $host . ':' . $port . "/" . $dbase;
+
+            return oci_password_change($database, $username, $old_password, $new_password);
+        } catch(Exception $e) {
+            return false;
+        }
     }
 
     public function connect($connection, $database, $host, $port, $username, $password)
@@ -41,7 +56,9 @@ class Oci implements \Database\Interfaces\PersistenceDatabase
                     )";
 
             $this->connection[$current] = new \PDO("oci:dbname=$tns;charset=UTF8", $username, $password);
+            $this->connection[$current]->beginTransaction();
             $this->connection[$current]->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $this->connection[$current]->setAttribute(\PDO::ATTR_AUTOCOMMIT, 0);
 
             if($nls = self::$config['database']['DB_OCI_NLS']) {
               foreach($nls as $key => $value) {
@@ -62,6 +79,32 @@ class Oci implements \Database\Interfaces\PersistenceDatabase
 
     public function getQueries() {
         return self::$queries;
+    }
+
+    public function callProcedure($sp_name = null, $sp_args = []) {
+        try {
+            foreach ($this->connection as $connection);
+
+            for($i = 0; $i < count($sp_args); $i++) {
+                $o[] = '?';
+            }
+
+            $args = implode(',', $o);
+
+            $sth = $connection->prepare("CALL $sp_name($args)");
+
+            for($i = 0, $z =1; $i < count($sp_args); $i++, $z++) {
+                $sth->bindParam($z, $sp_args[$i], \PDO::PARAM_STR|\PDO::PARAM_INPUT_OUTPUT, 2000);
+            }
+
+            if($sth->execute()) {
+                return $sp_args;
+            }
+
+        } catch (PDOException $e) {
+            self::$error[] = $e->getMessage();
+            Debug::getInstance('exceptions')->addException($e);
+        }
     }
 
     public function setQuery($sql) {

@@ -3,12 +3,17 @@
  * CRIADO EM: {%GC_DATE%}
  * GERADO POR: {%GC_DEVELOPER%} @ {%GC_MACHINE%}
  ************************************************************#}
+ {# ignora o menu na tela #}
+ {# set disable_menu = true #}
+ {# ignora o breadcrumb na tela #}
+ {# set disable_breadcrumb = true #}
 
-{% extends "index.twig" %}
-{% block content %}
+ {% extends "_templates/pmm/index.twig" %}
+ {% block content %}
 
-{{ flash | raw }}
+ {{ flash | raw }}
 
+<<<<<<< HEAD
 <!-- botão novo, botões de exportação, pesquisa mobile -->
 <div class="row">
     <div class="container">
@@ -73,3 +78,10 @@
 </div>
 
 {% endblock %}
+=======
+ {{header(URL ~ controller ~ '/novo', ['pdf', 'xls'], validarAcesso()) | raw}}
+
+ <div id="Htabela"></div>
+
+ {% endblock %}
+>>>>>>> cdd5230e8343a795ee5438002e26cae01fe2615f

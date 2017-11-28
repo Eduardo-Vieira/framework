@@ -36,7 +36,6 @@ class Paginator {
   public function paginate(&$data) {
     if(!is_null($data)) {
       $this->current_page = ($_REQUEST['p']) ? $_REQUEST['p'] : 1;
-
       $page_data = array_chunk($data, $this->per_page);
       $this->total_page = count($page_data);
       $new_data = $page_data[$this->current_page-1];
@@ -48,26 +47,23 @@ class Paginator {
   }
 
   private function previous_page() {
-    if($this->current_page < 1) {
-      return 1;
-    } else if($this->current_page <= $this->links_page) {
-      return 1;
-    } else {
-      return $this->current_page - $this->links_page;
-    }
+    if($this->current_page > 1) {
+      return $this->current_page - 1;
+    }else{
+      return $this->current_page;
+    } 
   }
-  private function next_page() {
+  private function next_page() {    
     if($this->current_page < $this->total_page) {
-      return $this->current_page + $this->links_page;
-    } else if($this->current_page > $this->total_page) {
-      return $this->total_page;
-    } else {
+      return $this->current_page + 1;
+    }else{
       return $this->current_page;
     }
   }
 
   public function pages() {
      $id = ($this->id) ? 'pagination-'.$this->id : false;
+<<<<<<< HEAD
     $pages = "<div class='text-center'><ul class='pagination $id'>
     <li><a href='?p=1'>
     <span class='glyphicon glyphicon-triangle-left' aria-hidden='true'></span>
@@ -75,37 +71,74 @@ class Paginator {
     <li><a href='?p={$this->previous_page()}'>
     <span class='glyphicon glyphicon-menu-left' aria-hidden='true'></span>
     </a></li>";
+=======
+
+    $pages = "<div class='text-center'>
+                <ul class='pagination $id'>
+                    <li>
+                        <a href='?p=1'>
+                            <span class='glyphicon glyphicon-triangle-left' aria-hidden='true'></span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href='?p={$this->previous_page()}'>
+                            <span class='glyphicon glyphicon-menu-left' aria-hidden='true'></span>
+                        </a>
+                    </li>";
+>>>>>>> cdd5230e8343a795ee5438002e26cae01fe2615f
 
     if( ($this->current_page - ($this->links_page - 1)) < 1) {
-      $previous = 1;
-      $next = $this->links_page;
+
+        $previous = 1;
+        $next = $this->links_page;
+
     } else {
-      $previous = $this->current_page;
-      if( ($this->current_page+$this->links_page) > $this->total_page ) {
-        $next = $this->total_page;
-      } else {
-        $next = $this->current_page + $this->links_page;
-      }
+
+        $previous = $this->current_page;
+
+        if( ($this->current_page+$this->links_page) > $this->total_page ) {
+
+            $next = $this->total_page;
+
+        } else {
+
+            $next = $this->current_page + $this->links_page;
+        }
     }
 
     for($i = $previous; $i <= $next; $i++) {
-      if($i > $this->total_page) break;
 
-      if($i == $this->current_page) {
-        $pages .= "<li class='active'><a href='?p=$i'>$i</a></li>";
-      } else {
-        $pages .= "<li><a href='?p=$i'>$i</a></li>";
-      }
+        if($i > $this->total_page) break;
+
+        if($i == $this->current_page) {
+
+            $pages .= "<li class='active'><a href='?p=$i'>$i</a></li>";
+
+        } else {
+
+            $pages .= "<li><a href='?p=$i'>$i</a></li>";
+
+        }
     }
+
     $pages .= "
-    <li><a href='?p={$this->next_page()}'>
-    <span class='glyphicon glyphicon-menu-right' aria-hidden='true'></span>
-    </a></li>
-    <li><a href='?p={$this->total_page}'>
-    <span class='glyphicon glyphicon-triangle-right' aria-hidden='true'></span>
-    </a></li>
+    <li>
+        <a href='?p={$this->next_page()}'>
+            <span class='glyphicon glyphicon-menu-right' aria-hidden='true'></span>
+        </a>
+    </li>
+
+    <li>
+        <a href='?p={$this->total_page}'>
+            <span class='glyphicon glyphicon-triangle-right' aria-hidden='true'></span>
+        </a>
+    </li>
+
     </ul>
+
     <p class='text-center'><i>$this->current_page de <b>$this->total_page</b></i></p>
+
     </div>";
 
     return ($this->total_page) ? $pages : false;
